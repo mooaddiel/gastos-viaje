@@ -391,6 +391,21 @@ input:focus, select:focus {
   font-weight: 600;
 }
 
+/* Etiqueta de subtipo (desayuno/almuerzo/cena, ida/vuelta) */
+.tag-subtype {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+
+/* Nombre con sangría en el desglose por tipo */
+.subtype-parent {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  font-weight: 600;
+  margin: 4px 0 2px;
+}
+
 .expense-delete {
   background: transparent;
   border: none;
