@@ -160,6 +160,11 @@ body {
   gap: 12px;
 }
 
+/* El atributo hidden debe ocultar aunque el elemento use display:flex */
+.field[hidden] {
+  display: none !important;
+}
+
 /* Cada columna de la fila no debe crecer más allá de su mitad disponible */
 .field-row > .field {
   flex: 1 1 0;
