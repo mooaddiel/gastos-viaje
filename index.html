@@ -71,6 +71,13 @@
             </div>
           </div>
 
+          <div class="field" id="subtypeField" hidden>
+            <label for="subtype" id="subtypeLabel">Tipo</label>
+            <select id="subtype">
+              <!-- opciones dinámicas según categoría -->
+            </select>
+          </div>
+
           <button type="submit" class="btn btn-primary">Agregar gasto</button>
         </form>
       </div>
@@ -145,6 +152,11 @@
         <h2>Gasto por categoría</h2>
         <div class="cardtotal-list" id="categoryTotalList"></div>
         <p class="empty hint" id="categoryTotalEmpty">Aún no hay gastos registrados.</p>
+      </div>
+
+      <div class="card" id="subtypeCard" hidden>
+        <h2>Detalle por tipo</h2>
+        <div class="cardtotal-list" id="subtypeTotalList"></div>
       </div>
 
       <div class="card">
