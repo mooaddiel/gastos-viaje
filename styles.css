@@ -148,7 +148,8 @@ body {
   flex-direction: column;
   gap: 6px;
   margin-bottom: 12px;
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .field-row {
@@ -169,6 +170,26 @@ input, select {
   color: var(--text);
   font-size: 1rem;
   width: 100%;
+  max-width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+}
+
+/* Safari iOS: los inputs de fecha/hora tienen ancho propio y se desbordan.
+   Forzamos que respeten el contenedor. */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"] {
+  display: block;
+  width: 100%;
+  min-height: 46px;
+}
+
+/* El contenido interno del date picker en iOS también puede empujar el ancho */
+input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+  margin: 0;
 }
 
 input:focus, select:focus {
