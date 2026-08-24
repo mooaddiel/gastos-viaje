@@ -167,6 +167,26 @@ function confirmDialog(message) {
   });
 }
 
+// Igual que confirmDialog pero permite contenido HTML (para el diff de cambios)
+function confirmDialogHTML(html) {
+  return new Promise((resolve) => {
+    modalMessage.innerHTML = html;
+    modalOverlay.hidden = false;
+
+    const cleanup = () => {
+      modalConfirm.removeEventListener('click', onConfirm);
+      modalCancel.removeEventListener('click', onCancel);
+      modalOverlay.hidden = true;
+      modalMessage.innerHTML = '';
+    };
+    const onConfirm = () => { cleanup(); resolve(true); };
+    const onCancel = () => { cleanup(); resolve(false); };
+
+    modalConfirm.addEventListener('click', onConfirm);
+    modalCancel.addEventListener('click', onCancel);
+  });
+}
+
 // Doble confirmación: pide confirmar dos veces seguidas
 async function doubleConfirm(msg1, msg2) {
   const first = await confirmDialog(msg1);
@@ -319,6 +339,145 @@ async function deleteExpense(id) {
 }
 
 // ============================================================
+//  Edición de gasto
+// ============================================================
+const editOverlay = document.getElementById('editOverlay');
+const editForm = document.getElementById('editForm');
+const editCategory = document.getElementById('editCategory');
+const editCard = document.getElementById('editCard');
+const editSubtypeField = document.getElementById('editSubtypeField');
+const editSubtype = document.getElementById('editSubtype');
+
+let editingId = null;
+
+// Rellena el select de tipo del modal de edición según la categoría
+function updateEditSubtypeField(selectedValue) {
+  const options = CATEGORY_SUBTYPES[editCategory.value];
+  if (options) {
+    editSubtype.innerHTML = '';
+    options.forEach((opt) => {
+      const o = document.createElement('option');
+      o.value = opt;
+      o.textContent = opt;
+      if (opt === selectedValue) o.selected = true;
+      editSubtype.appendChild(o);
+    });
+    editSubtypeField.hidden = false;
+  } else {
+    editSubtypeField.hidden = true;
+    editSubtype.innerHTML = '';
+  }
+}
+
+editCategory.addEventListener('change', () => updateEditSubtypeField());
+
+function openEditExpense(id) {
+  const exp = expenses.find((e) => e.id === id);
+  if (!exp) return;
+  editingId = id;
+
+  // Poblar tarjetas (por si cambiaron)
+  editCard.innerHTML = '';
+  cards.forEach((c) => {
+    const o = document.createElement('option');
+    o.value = c.name;
+    o.textContent = c.name;
+    editCard.appendChild(o);
+  });
+  // Si la tarjeta del gasto ya no existe, la agregamos como opción para no perderla
+  if (!cards.some((c) => c.name === exp.card)) {
+    const o = document.createElement('option');
+    o.value = exp.card;
+    o.textContent = exp.card + ' (eliminada)';
+    editCard.appendChild(o);
+  }
+
+  document.getElementById('editConcept').value = exp.concept;
+  document.getElementById('editAmount').value = exp.amount;
+  document.getElementById('editDate').value = exp.date;
+  editCategory.value = exp.category;
+  editCard.value = exp.card;
+  updateEditSubtypeField(exp.subtype);
+
+  editOverlay.hidden = false;
+}
+
+function closeEditExpense() {
+  editOverlay.hidden = true;
+  editingId = null;
+}
+
+document.getElementById('editCancel').addEventListener('click', closeEditExpense);
+
+editForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const exp = expenses.find((x) => x.id === editingId);
+  if (!exp) return;
+
+  // Valores nuevos del formulario
+  const updated = {
+    concept: document.getElementById('editConcept').value.trim(),
+    amount: parseFloat(document.getElementById('editAmount').value),
+    date: document.getElementById('editDate').value,
+    category: editCategory.value,
+    subtype: editSubtypeField.hidden ? '' : editSubtype.value,
+    card: editCard.value,
+  };
+
+  // Detecta qué cambió (etiqueta legible + valor antes/después)
+  const fields = [
+    { key: 'concept', label: 'Concepto', fmt: (v) => v || '(vacío)' },
+    { key: 'amount', label: 'Monto', fmt: (v) => money(v) },
+    { key: 'date', label: 'Fecha', fmt: (v) => formatDate(v) },
+    { key: 'category', label: 'Categoría', fmt: (v) => v },
+    { key: 'subtype', label: 'Tipo', fmt: (v) => v || '(sin tipo)' },
+    { key: 'card', label: 'Tarjeta', fmt: (v) => v },
+  ];
+
+  const changes = fields.filter((f) => String(exp[f.key] ?? '') !== String(updated[f.key] ?? ''));
+
+  if (changes.length === 0) {
+    toast('No hubo cambios');
+    closeEditExpense();
+    return;
+  }
+
+  // Construye el diff "antes -> después"
+  const diffHtml = `
+    <div class="diff-intro">¿Guardar estos cambios?</div>
+    <div class="diff-list">
+      ${changes.map((f) => `
+        <div class="diff-row">
+          <div class="diff-field">${f.label}</div>
+          <div class="diff-change">
+            <span class="diff-before">${escapeHtml(f.fmt(exp[f.key]))}</span>
+            <span class="diff-arrow">→</span>
+            <span class="diff-after">${escapeHtml(f.fmt(updated[f.key]))}</span>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  // El modal de edición y el de confirmación son overlays distintos.
+  // Ocultamos el de edición mientras se confirma para que no se solapen.
+  editOverlay.hidden = true;
+  const ok = await confirmDialogHTML(diffHtml);
+  if (!ok) {
+    // Si cancela, reabrimos el modal de edición con los valores que había escrito
+    editOverlay.hidden = false;
+    return;
+  }
+
+  // Aplica los cambios
+  Object.assign(exp, updated);
+  saveExpenses();
+  render();
+  closeEditExpense();
+  toast('Gasto actualizado');
+});
+
+// ============================================================
 //  Render
 // ============================================================
 function getFiltered() {
@@ -390,13 +549,23 @@ function buildExpenseRow(exp) {
     </div>
   `;
 
+  const edit = document.createElement('button');
+  edit.className = 'expense-edit';
+  edit.textContent = '✎';
+  edit.setAttribute('aria-label', 'Editar gasto');
+  edit.addEventListener('click', () => openEditExpense(exp.id));
+
   const del = document.createElement('button');
   del.className = 'expense-delete';
   del.textContent = '✕';
   del.setAttribute('aria-label', 'Eliminar gasto');
   del.addEventListener('click', () => deleteExpense(exp.id));
 
-  div.append(check, body, del);
+  const actions = document.createElement('div');
+  actions.className = 'expense-actions';
+  actions.append(edit, del);
+
+  div.append(check, body, actions);
   return div;
 }
 

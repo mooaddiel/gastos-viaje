@@ -192,11 +192,57 @@
   <!-- Modal de confirmación reutilizable -->
   <div class="modal-overlay" id="modalOverlay" hidden>
     <div class="modal" role="dialog" aria-modal="true">
-      <p class="modal-message" id="modalMessage"></p>
+      <div class="modal-message" id="modalMessage"></div>
       <div class="modal-actions">
         <button type="button" class="btn btn-ghost" id="modalCancel">Cancelar</button>
         <button type="button" class="btn btn-primary" id="modalConfirm">Confirmar</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Modal de edición de gasto -->
+  <div class="modal-overlay" id="editOverlay" hidden>
+    <div class="modal modal-edit" role="dialog" aria-modal="true">
+      <h2 class="modal-title">Editar gasto</h2>
+      <form id="editForm" autocomplete="off">
+        <div class="field">
+          <label for="editConcept">Concepto</label>
+          <input type="text" id="editConcept" required />
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="editAmount">Monto</label>
+            <input type="number" id="editAmount" inputmode="decimal" step="0.01" min="0" required />
+          </div>
+          <div class="field">
+            <label for="editDate">Fecha</label>
+            <input type="date" id="editDate" required />
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="editCategory">Categoría</label>
+            <select id="editCategory" required>
+              <option value="Comida">🍽️ Comida</option>
+              <option value="Taxi">🚕 Taxi / Transporte</option>
+              <option value="Hospedaje">🏨 Hospedaje</option>
+              <option value="Otros">📦 Otros</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="editCard">Tarjeta</label>
+            <select id="editCard" required></select>
+          </div>
+        </div>
+        <div class="field" id="editSubtypeField" hidden>
+          <label for="editSubtype">Tipo</label>
+          <select id="editSubtype"></select>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" id="editCancel">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
     </div>
   </div>
 

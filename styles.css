@@ -411,15 +411,25 @@ input:focus, select:focus {
   margin: 4px 0 2px;
 }
 
+.expense-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.expense-edit,
 .expense-delete {
   background: transparent;
   border: none;
   color: var(--text-dim);
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   cursor: pointer;
   padding: 4px 8px;
-  flex-shrink: 0;
+  line-height: 1;
 }
+
+.expense-edit { color: var(--primary); }
 
 /* Comida por día */
 .daily-header {
@@ -685,6 +695,67 @@ details summary {
 .modal-message {
   margin-bottom: 18px;
   text-align: center;
+}
+
+.modal-title {
+  font-size: 1.05rem;
+  margin-bottom: 14px;
+}
+
+.modal-edit {
+  max-width: 380px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Modal de confirmación de cambios (antes -> después) */
+.diff-intro {
+  margin-bottom: 12px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.diff-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 8px;
+  text-align: left;
+}
+
+.diff-row {
+  background: var(--bg-card-2);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.diff-field {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.diff-change {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+}
+
+.diff-before {
+  color: var(--danger);
+  text-decoration: line-through;
+  opacity: 0.85;
+}
+
+.diff-arrow { color: var(--text-dim); }
+
+.diff-after {
+  color: var(--success);
+  font-weight: 700;
 }
 
 .modal-actions {
