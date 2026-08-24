@@ -33,6 +33,12 @@ const CATEGORY_COLORS = {
 };
 const DEFAULT_CATEGORY_COLOR = '#64748b';
 
+// Subtipos disponibles por categoría (las que no aparecen aquí no tienen subtipo)
+const CATEGORY_SUBTYPES = {
+  'Comida': ['Desayuno', 'Almuerzo', 'Cena'],
+  'Taxi': ['Ida', 'Vuelta'],
+};
+
 const DEFAULT_FOOD_BUDGET = 800;
 
 // ---- Estado ----
@@ -111,6 +117,29 @@ const listEl = document.getElementById('expenseList');
 const emptyState = document.getElementById('emptyState');
 const cardSelect = document.getElementById('card');
 const cardsListEl = document.getElementById('cardsList');
+const categorySelect = document.getElementById('category');
+const subtypeField = document.getElementById('subtypeField');
+const subtypeSelect = document.getElementById('subtype');
+
+// Muestra u oculta el campo "Tipo" según la categoría seleccionada
+function updateSubtypeField() {
+  const options = CATEGORY_SUBTYPES[categorySelect.value];
+  if (options) {
+    subtypeSelect.innerHTML = '';
+    options.forEach((opt) => {
+      const o = document.createElement('option');
+      o.value = opt;
+      o.textContent = opt;
+      subtypeSelect.appendChild(o);
+    });
+    subtypeField.hidden = false;
+  } else {
+    subtypeField.hidden = true;
+    subtypeSelect.innerHTML = '';
+  }
+}
+
+categorySelect.addEventListener('change', updateSubtypeField);
 
 // ============================================================
 //  Modal de confirmación (con doble confirmación cuando aplica)
@@ -249,6 +278,7 @@ function addExpense(data) {
     amount: parseFloat(data.amount),
     date: data.date,
     category: data.category,
+    subtype: data.subtype || '',
     card: data.card,
     uploaded: false,
   });
@@ -301,6 +331,7 @@ function render() {
   renderSummary();
   renderDailyFood();
   renderCategoryTotals();
+  renderSubtypeTotals();
   renderCardTotals();
   renderDayChart();
   const items = getFiltered();
@@ -354,6 +385,7 @@ function buildExpenseRow(exp) {
     </div>
     <div class="expense-meta">
       <span class="tag" style="background:${catColor};color:${textOn(catColor)}">${escapeHtml(exp.category)}</span>
+      ${exp.subtype ? `<span class="tag tag-subtype">${escapeHtml(exp.subtype)}</span>` : ''}
       <span class="tag" style="background:${crdColor};color:${textOn(crdColor)}">${escapeHtml(exp.card)}</span>
     </div>
   `;
@@ -469,6 +501,58 @@ function renderCategoryTotals() {
   });
 }
 
+// ---- Detalle por tipo (subtipos de Comida y Taxi) ----
+const subtypeCard = document.getElementById('subtypeCard');
+const subtypeTotalList = document.getElementById('subtypeTotalList');
+
+function renderSubtypeTotals() {
+  // Agrupa: categoría -> subtipo -> {amount, count}
+  const grouped = {};
+  expenses.forEach((e) => {
+    if (!e.subtype) return;
+    grouped[e.category] = grouped[e.category] || {};
+    const g = grouped[e.category];
+    g[e.subtype] = g[e.subtype] || { amount: 0, count: 0 };
+    g[e.subtype].amount += e.amount;
+    g[e.subtype].count += 1;
+  });
+
+  const categories = Object.keys(grouped);
+  subtypeCard.hidden = categories.length === 0;
+  subtypeTotalList.innerHTML = '';
+
+  categories.forEach((cat) => {
+    const color = categoryColor(cat);
+
+    // Encabezado de la categoría
+    const heading = document.createElement('div');
+    heading.className = 'subtype-parent';
+    heading.textContent = cat;
+    subtypeTotalList.appendChild(heading);
+
+    // Subtipos ordenados por gasto
+    const subs = Object.keys(grouped[cat]).sort(
+      (a, b) => grouped[cat][b].amount - grouped[cat][a].amount
+    );
+    subs.forEach((sub) => {
+      const { amount, count } = grouped[cat][sub];
+      const item = document.createElement('div');
+      item.className = 'cardtotal-item';
+      item.style.borderLeft = `4px solid ${color}`;
+      item.innerHTML = `
+        <span class="cardtotal-name">
+          <span class="color-dot" style="background:${color}"></span>${escapeHtml(sub)}
+        </span>
+        <span class="cardtotal-right">
+          <span class="cardtotal-amount">${money(amount)}</span>
+          <span class="cardtotal-count">${count} ${count === 1 ? 'gasto' : 'gastos'}</span>
+        </span>
+      `;
+      subtypeTotalList.appendChild(item);
+    });
+  });
+}
+
 // ---- Gasto por tarjeta ----
 const cardTotalList = document.getElementById('cardTotalList');
 const cardTotalEmpty = document.getElementById('cardTotalEmpty');
@@ -576,15 +660,19 @@ document.querySelectorAll('.chip').forEach((chip) => {
 // ============================================================
 form.addEventListener('submit', (e) => {
   e.preventDefault();
+  const category = document.getElementById('category').value;
+  const hasSubtype = !subtypeField.hidden;
   addExpense({
     concept: document.getElementById('concept').value.trim(),
     amount: document.getElementById('amount').value,
     date: document.getElementById('date').value,
-    category: document.getElementById('category').value,
+    category,
+    subtype: hasSubtype ? subtypeSelect.value : '',
     card: document.getElementById('card').value,
   });
   form.reset();
   setTodayAsDefault();
+  updateSubtypeField();
   toast('Gasto agregado');
   goToTab('tab-list');
 });
@@ -713,6 +801,7 @@ function init() {
   renderCardOptions();
   renderCardsList();
   renderColorPicker();
+  updateSubtypeField();
   setTodayAsDefault();
   setupTabs();
   render();
