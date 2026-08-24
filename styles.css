@@ -26,6 +26,7 @@ body {
   color: var(--text);
   line-height: 1.5;
   padding-bottom: 80px;
+  overflow-x: hidden;
 }
 
 /* Pestañas */
@@ -88,6 +89,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 /* Resumen */
@@ -157,6 +160,13 @@ body {
   gap: 12px;
 }
 
+/* Cada columna de la fila no debe crecer más allá de su mitad disponible */
+.field-row > .field {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 100%;
+}
+
 label {
   font-size: 0.8rem;
   color: var(--text-dim);
@@ -183,13 +193,23 @@ input[type="time"],
 input[type="datetime-local"] {
   display: block;
   width: 100%;
+  max-width: 100%;
   min-height: 46px;
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 /* El contenido interno del date picker en iOS también puede empujar el ancho */
 input[type="date"]::-webkit-date-and-time-value {
   text-align: left;
   margin: 0;
+  min-width: 0;
+}
+
+input[type="date"]::-webkit-datetime-edit {
+  padding: 0;
+  min-width: 0;
 }
 
 input:focus, select:focus {
