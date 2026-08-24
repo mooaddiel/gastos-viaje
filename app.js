@@ -852,10 +852,18 @@ function goToTab(tabId) {
   if (btn) btn.click();
 }
 
+// Fecha de hoy en formato YYYY-MM-DD usando la hora LOCAL (no UTC),
+// para que no cambie de día por la diferencia de zona horaria.
+function todayLocalISO() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 function setTodayAsDefault() {
-  const today = new Date();
-  const iso = today.toISOString().split('T')[0];
-  document.getElementById('date').value = iso;
+  document.getElementById('date').value = todayLocalISO();
 }
 
 // ============================================================
