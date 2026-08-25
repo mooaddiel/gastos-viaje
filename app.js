@@ -575,33 +575,28 @@ function buildExpenseRow(exp) {
   const crdColor = cardColor(exp.card);
   const hasReported = usesReported(exp);
 
-  // Columna "Gasto real": activa (contada) si NO hay reportado
-  const realActive = !hasReported;
-  // Columna "Gasto reportado": activa (contada) si SÍ hay reportado
-  const reportedBlock = hasReported
+  // Si hay reportado: dos columnas (real atenuada, reportado resaltado).
+  // Si NO hay reportado: solo el monto real simple, sin recuadros vacíos.
+  const amountBlock = hasReported
     ? `
-      <div class="amount-col reported active">
-        <span class="amount-col-label">Reportado ${realActive ? '' : '✓'}</span>
-        <span class="amount-col-value">${money(exp.reportedAmount)}</span>
-        ${exp.reportedPlace ? `<span class="amount-col-place">${escapeHtml(exp.reportedPlace)}</span>` : ''}
+      <div class="amount-cols">
+        <div class="amount-col real inactive">
+          <span class="amount-col-label">Real</span>
+          <span class="amount-col-value">${money(exp.amount)}</span>
+        </div>
+        <div class="amount-col reported active">
+          <span class="amount-col-label">Reportado ✓</span>
+          <span class="amount-col-value">${money(exp.reportedAmount)}</span>
+          ${exp.reportedPlace ? `<span class="amount-col-place">${escapeHtml(exp.reportedPlace)}</span>` : ''}
+        </div>
       </div>`
-    : `
-      <div class="amount-col reported empty">
-        <span class="amount-col-label">Reportado</span>
-        <span class="amount-col-value muted">—</span>
-      </div>`;
+    : `<div class="expense-single-amount">${money(exp.amount)}</div>`;
 
   body.innerHTML = `
     <div class="expense-top">
       <span class="expense-concept">${escapeHtml(exp.concept)}</span>
     </div>
-    <div class="amount-cols">
-      <div class="amount-col real ${realActive ? 'active' : 'inactive'}">
-        <span class="amount-col-label">Real ${realActive ? '✓' : ''}</span>
-        <span class="amount-col-value">${money(exp.amount)}</span>
-      </div>
-      ${reportedBlock}
-    </div>
+    ${amountBlock}
     <div class="expense-meta">
       <span class="tag" style="background:${catColor};color:${textOn(catColor)}">${escapeHtml(exp.category)}</span>
       ${exp.subtype ? `<span class="tag tag-subtype">${escapeHtml(exp.subtype)}</span>` : ''}
@@ -634,12 +629,21 @@ const dailyFoodList = document.getElementById('dailyFoodList');
 const dailyFoodEmpty = document.getElementById('dailyFoodEmpty');
 
 function renderDailyFood() {
-  // Agrupa gastos de comida por fecha
+  // Agrupa gastos de comida por fecha.
+  // byDay = monto que cuenta (efectivo). byDayReal/byDayReported para la nota.
   const byDay = {};
+  const byDayReal = {};
+  const byDayReported = {};
+  let anyReported = false;
   expenses
     .filter((e) => e.category === 'Comida')
     .forEach((e) => {
       byDay[e.date] = (byDay[e.date] || 0) + effectiveAmount(e);
+      byDayReal[e.date] = (byDayReal[e.date] || 0) + e.amount;
+      if (usesReported(e)) {
+        byDayReported[e.date] = (byDayReported[e.date] || 0) + Number(e.reportedAmount);
+        anyReported = true;
+      }
     });
 
   const days = Object.keys(byDay).sort((a, b) => b.localeCompare(a)); // más reciente primero
@@ -668,6 +672,13 @@ function renderDailyFood() {
       remainingText = `Excedido ${money(Math.abs(remaining))}`;
     }
 
+    // Nota reportado vs real: solo si ese día hay algún gasto con reportado
+    const realTotal = byDayReal[date] || 0;
+    const hasReportedThisDay = byDayReported[date] != null;
+    const noteHtml = hasReportedThisDay
+      ? `<div class="daily-note">Reportado ${money(spent)} · Real ${money(realTotal)}</div>`
+      : '';
+
     const item = document.createElement('div');
     item.className = `daily-item ${stateClass}`;
     item.innerHTML = `
@@ -676,6 +687,7 @@ function renderDailyFood() {
         <span class="daily-remaining ${stateClass}">${remainingText}</span>
       </div>
       <div class="daily-detail">Gastado ${money(spent)} de ${money(foodBudget)}</div>
+      ${noteHtml}
       <div class="daily-bar">
         <div class="daily-bar-fill ${stateClass}" style="width:${pct}%"></div>
       </div>
