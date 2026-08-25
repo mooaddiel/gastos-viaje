@@ -291,6 +291,21 @@ document.getElementById('addCardBtn').addEventListener('click', addCard);
 // ============================================================
 //  Gastos
 // ============================================================
+
+// Monto que realmente cuenta para las sumas:
+// si hay cantidad reportada (> 0 o registrada), se usa esa; si no, la real.
+function effectiveAmount(exp) {
+  if (exp.reportedAmount != null && exp.reportedAmount !== '') {
+    return Number(exp.reportedAmount);
+  }
+  return exp.amount;
+}
+
+// Indica si el gasto está usando el monto reportado
+function usesReported(exp) {
+  return exp.reportedAmount != null && exp.reportedAmount !== '';
+}
+
 function addExpense(data) {
   expenses.unshift({
     id: Date.now().toString(),
@@ -399,8 +414,19 @@ function openEditExpense(id) {
   editCard.value = exp.card;
   updateEditSubtypeField(exp.subtype);
 
+  // Gasto reportado (opcional)
+  document.getElementById('editReportedPlace').value = exp.reportedPlace || '';
+  document.getElementById('editReportedAmount').value =
+    exp.reportedAmount != null && exp.reportedAmount !== '' ? exp.reportedAmount : '';
+
   editOverlay.hidden = false;
 }
+
+// Botón para limpiar el gasto reportado
+document.getElementById('editReportedClear').addEventListener('click', () => {
+  document.getElementById('editReportedPlace').value = '';
+  document.getElementById('editReportedAmount').value = '';
+});
 
 function closeEditExpense() {
   editOverlay.hidden = true;
@@ -414,6 +440,12 @@ editForm.addEventListener('submit', async (e) => {
   const exp = expenses.find((x) => x.id === editingId);
   if (!exp) return;
 
+  // Gasto reportado: si hay cantidad válida, se guarda; si no, queda vacío
+  const rawReportedAmount = document.getElementById('editReportedAmount').value.trim();
+  const rawReportedPlace = document.getElementById('editReportedPlace').value.trim();
+  const parsedReported = parseFloat(rawReportedAmount);
+  const hasReportedAmount = rawReportedAmount !== '' && !isNaN(parsedReported);
+
   // Valores nuevos del formulario
   const updated = {
     concept: document.getElementById('editConcept').value.trim(),
@@ -422,16 +454,20 @@ editForm.addEventListener('submit', async (e) => {
     category: editCategory.value,
     subtype: editSubtypeField.hidden ? '' : editSubtype.value,
     card: editCard.value,
+    reportedAmount: hasReportedAmount ? parsedReported : '',
+    reportedPlace: hasReportedAmount ? rawReportedPlace : '',
   };
 
   // Detecta qué cambió (etiqueta legible + valor antes/después)
   const fields = [
     { key: 'concept', label: 'Concepto', fmt: (v) => v || '(vacío)' },
-    { key: 'amount', label: 'Monto', fmt: (v) => money(v) },
+    { key: 'amount', label: 'Monto real', fmt: (v) => money(v) },
     { key: 'date', label: 'Fecha', fmt: (v) => formatDate(v) },
     { key: 'category', label: 'Categoría', fmt: (v) => v },
     { key: 'subtype', label: 'Tipo', fmt: (v) => v || '(sin tipo)' },
     { key: 'card', label: 'Tarjeta', fmt: (v) => v },
+    { key: 'reportedAmount', label: 'Cantidad reportada', fmt: (v) => (v === '' || v == null) ? '(sin reportar)' : money(v) },
+    { key: 'reportedPlace', label: 'Establecimiento', fmt: (v) => v || '(vacío)' },
   ];
 
   const changes = fields.filter((f) => String(exp[f.key] ?? '') !== String(updated[f.key] ?? ''));
@@ -507,7 +543,7 @@ function render() {
 
   days.forEach((date) => {
     const group = byDay[date];
-    const dayTotal = group.reduce((s, e) => s + e.amount, 0);
+    const dayTotal = group.reduce((s, e) => s + effectiveAmount(e), 0);
 
     // Encabezado del día
     const header = document.createElement('div');
@@ -537,10 +573,34 @@ function buildExpenseRow(exp) {
   body.className = 'expense-body';
   const catColor = categoryColor(exp.category);
   const crdColor = cardColor(exp.card);
+  const hasReported = usesReported(exp);
+
+  // Columna "Gasto real": activa (contada) si NO hay reportado
+  const realActive = !hasReported;
+  // Columna "Gasto reportado": activa (contada) si SÍ hay reportado
+  const reportedBlock = hasReported
+    ? `
+      <div class="amount-col reported active">
+        <span class="amount-col-label">Reportado ${realActive ? '' : '✓'}</span>
+        <span class="amount-col-value">${money(exp.reportedAmount)}</span>
+        ${exp.reportedPlace ? `<span class="amount-col-place">${escapeHtml(exp.reportedPlace)}</span>` : ''}
+      </div>`
+    : `
+      <div class="amount-col reported empty">
+        <span class="amount-col-label">Reportado</span>
+        <span class="amount-col-value muted">—</span>
+      </div>`;
+
   body.innerHTML = `
     <div class="expense-top">
       <span class="expense-concept">${escapeHtml(exp.concept)}</span>
-      <span class="expense-amount">${money(exp.amount)}</span>
+    </div>
+    <div class="amount-cols">
+      <div class="amount-col real ${realActive ? 'active' : 'inactive'}">
+        <span class="amount-col-label">Real ${realActive ? '✓' : ''}</span>
+        <span class="amount-col-value">${money(exp.amount)}</span>
+      </div>
+      ${reportedBlock}
     </div>
     <div class="expense-meta">
       <span class="tag" style="background:${catColor};color:${textOn(catColor)}">${escapeHtml(exp.category)}</span>
@@ -579,7 +639,7 @@ function renderDailyFood() {
   expenses
     .filter((e) => e.category === 'Comida')
     .forEach((e) => {
-      byDay[e.date] = (byDay[e.date] || 0) + e.amount;
+      byDay[e.date] = (byDay[e.date] || 0) + effectiveAmount(e);
     });
 
   const days = Object.keys(byDay).sort((a, b) => b.localeCompare(a)); // más reciente primero
@@ -642,7 +702,7 @@ function renderCategoryTotals() {
   const byCat = {};
   const countByCat = {};
   expenses.forEach((e) => {
-    byCat[e.category] = (byCat[e.category] || 0) + e.amount;
+    byCat[e.category] = (byCat[e.category] || 0) + effectiveAmount(e);
     countByCat[e.category] = (countByCat[e.category] || 0) + 1;
   });
 
@@ -682,7 +742,7 @@ function renderSubtypeTotals() {
     grouped[e.category] = grouped[e.category] || {};
     const g = grouped[e.category];
     g[e.subtype] = g[e.subtype] || { amount: 0, count: 0 };
-    g[e.subtype].amount += e.amount;
+    g[e.subtype].amount += effectiveAmount(e);
     g[e.subtype].count += 1;
   });
 
@@ -730,7 +790,7 @@ function renderCardTotals() {
   const byCard = {};
   const countByCard = {};
   expenses.forEach((e) => {
-    byCard[e.card] = (byCard[e.card] || 0) + e.amount;
+    byCard[e.card] = (byCard[e.card] || 0) + effectiveAmount(e);
     countByCard[e.card] = (countByCard[e.card] || 0) + 1;
   });
 
@@ -764,7 +824,7 @@ const chartEmpty = document.getElementById('chartEmpty');
 function renderDayChart() {
   const byDay = {};
   expenses.forEach((e) => {
-    byDay[e.date] = (byDay[e.date] || 0) + e.amount;
+    byDay[e.date] = (byDay[e.date] || 0) + effectiveAmount(e);
   });
 
   const days = Object.keys(byDay).sort((a, b) => a.localeCompare(b)); // cronológico
@@ -796,9 +856,9 @@ function renderDayChart() {
 }
 
 function renderSummary() {
-  const total = expenses.reduce((s, e) => s + e.amount, 0);
+  const total = expenses.reduce((s, e) => s + effectiveAmount(e), 0);
   const pendingItems = expenses.filter((e) => !e.uploaded);
-  const pending = pendingItems.reduce((s, e) => s + e.amount, 0);
+  const pending = pendingItems.reduce((s, e) => s + effectiveAmount(e), 0);
   document.getElementById('totalAmount').textContent = money(total);
   document.getElementById('pendingAmount').textContent = money(pending);
   document.getElementById('pendingCount').textContent =

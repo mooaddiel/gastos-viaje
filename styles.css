@@ -379,6 +379,60 @@ input:focus, select:focus {
 
 .expense-amount { font-weight: 700; white-space: nowrap; }
 
+/* Columnas de monto real vs reportado */
+.amount-cols {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.amount-col {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-card-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* La columna que SÍ se toma en cuenta se resalta en verde */
+.amount-col.active {
+  border-color: var(--success);
+  background: rgba(34, 197, 94, 0.12);
+}
+
+/* La que no se cuenta se ve atenuada */
+.amount-col.inactive { opacity: 0.55; }
+
+.amount-col.empty { opacity: 0.5; }
+
+.amount-col-label {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-dim);
+}
+
+.amount-col.active .amount-col-label { color: var(--success); font-weight: 700; }
+
+.amount-col-value {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.amount-col-value.muted { color: var(--text-dim); font-weight: 400; }
+
+.amount-col-place {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .expense-meta {
   display: flex;
   flex-wrap: wrap;
@@ -707,6 +761,27 @@ details summary {
   max-height: 90vh;
   overflow-y: auto;
 }
+
+.reported-section {
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 14px;
+}
+
+.reported-title {
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: 2px;
+}
+
+.reported-hint {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+
+#editReportedClear { margin-top: 4px; }
 
 /* Modal de confirmación de cambios (antes -> después) */
 .diff-intro {

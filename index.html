@@ -238,6 +238,21 @@
           <label for="editSubtype">Tipo</label>
           <select id="editSubtype"></select>
         </div>
+
+        <div class="reported-section">
+          <div class="reported-title">Gasto reportado (opcional)</div>
+          <p class="reported-hint">Si lo llenas, esta cantidad es la que cuenta para las sumas.</p>
+          <div class="field">
+            <label for="editReportedPlace">Establecimiento</label>
+            <input type="text" id="editReportedPlace" placeholder="Ej. Restaurante El Buen Sabor" />
+          </div>
+          <div class="field">
+            <label for="editReportedAmount">Cantidad</label>
+            <input type="number" id="editReportedAmount" inputmode="decimal" step="0.01" min="0" placeholder="0.00" />
+          </div>
+          <button type="button" class="btn btn-ghost" id="editReportedClear">Quitar gasto reportado</button>
+        </div>
+
         <div class="modal-actions">
           <button type="button" class="btn btn-ghost" id="editCancel">Cancelar</button>
           <button type="submit" class="btn btn-primary">Guardar</button>
