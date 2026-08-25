@@ -33,6 +33,17 @@ const CATEGORY_COLORS = {
 };
 const DEFAULT_CATEGORY_COLOR = '#64748b';
 
+// Icono por categoría (para el desglose del encabezado del día)
+const CATEGORY_ICONS = {
+  'Comida': '🍽️',
+  'Taxi': '🚕',
+  'Hospedaje': '🏨',
+  'Otros': '📦',
+};
+function categoryIcon(name) {
+  return CATEGORY_ICONS[name] || '📦';
+}
+
 // Subtipos disponibles por categoría (las que no aparecen aquí no tienen subtipo)
 const CATEGORY_SUBTYPES = {
   'Comida': ['Desayuno', 'Almuerzo', 'Cena'],
@@ -545,12 +556,25 @@ function render() {
     const group = byDay[date];
     const dayTotal = group.reduce((s, e) => s + effectiveAmount(e), 0);
 
+    // Subtotal por categoría de ese día (usa el monto que cuenta)
+    const byCat = {};
+    group.forEach((e) => {
+      byCat[e.category] = (byCat[e.category] || 0) + effectiveAmount(e);
+    });
+    const catChips = Object.keys(byCat)
+      .sort((a, b) => byCat[b] - byCat[a])
+      .map((cat) => `<span class="day-cat"><span class="day-cat-icon">${categoryIcon(cat)}</span>${money(byCat[cat])}</span>`)
+      .join('');
+
     // Encabezado del día
     const header = document.createElement('div');
     header.className = 'day-header';
     header.innerHTML = `
-      <span class="day-header-date">${formatDate(date)}</span>
-      <span class="day-header-total">${money(dayTotal)}</span>
+      <div class="day-header-left">
+        <span class="day-header-date">${formatDate(date)}</span>
+        <span class="day-cats">${catChips}</span>
+      </div>
+      <span class="day-header-total">Total ${money(dayTotal)}</span>
     `;
     listEl.appendChild(header);
 

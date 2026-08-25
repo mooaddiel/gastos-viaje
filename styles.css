@@ -276,23 +276,50 @@ input:focus, select:focus {
 .day-header {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  padding: 6px 4px 2px;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 4px 4px;
   margin-top: 6px;
   border-bottom: 1px solid var(--border);
 }
 
 .day-header:first-child { margin-top: 0; }
 
+.day-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
 .day-header-date {
   font-weight: 700;
   font-size: 0.95rem;
 }
 
+/* Desglose por categoría (icono + monto), pequeño */
+.day-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.day-cat {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+
+.day-cat-icon { font-size: 0.82rem; }
+
 .day-header-total {
   font-size: 0.82rem;
-  color: var(--text-dim);
-  font-weight: 600;
+  color: var(--text);
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* Gasto por tarjeta */
